@@ -1,6 +1,9 @@
 version = 1
-revision = 1
 requires-python = ">=3.12"
+resolution-markers = [
+    "python_full_version >= '3.12.4'",
+    "python_full_version < '3.12.4'",
+]
 
 [[package]]
 name = "annotated-types"
@@ -98,7 +101,7 @@ wheels = [
 [[package]]
 name = "chatdata-mcp-server"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "autopep8" },
     { name = "black" },
