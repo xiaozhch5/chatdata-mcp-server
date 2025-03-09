@@ -58,6 +58,9 @@ ChatData MCP 服务器是一个基于 Model Control Protocol (MCP) 的服务应�
 - 服务器发送事件 (SSE) 模式
 
 ## 安装与使用
+```
+uv venv --python 3.12
+```
 
 ### 安装依赖
 
@@ -69,6 +72,12 @@ pip install -e .
 
 ```bash
 uv pip install -e .
+```
+
+安装playwright
+
+```bash
+playwright install
 ```
 
 ### 启动服务器

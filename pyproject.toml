@@ -33,7 +33,8 @@ dependencies = [
     "numpy>=2.2.3",
     "sympy>=1.13.3",
     "pyyaml>=6.0.2",
-    "xmltodict>=0.14.2"
+    "xmltodict>=0.14.2",
+    "browser-use>=0.1.40",
 ]
 
 [project.urls]
