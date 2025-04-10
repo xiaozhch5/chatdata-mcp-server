@@ -125,11 +125,6 @@ async def analyze_pdf(
             type="text",
             text=f"下载PDF时发生错误: {str(e)}"
         )]
-    except pdfplumber.PDFSyntaxError:
-        return [types.TextContent(
-            type="text",
-            text="错误: 无效的PDF文件格式"
-        )]
     except Exception as e:
         return [types.TextContent(
             type="text",
