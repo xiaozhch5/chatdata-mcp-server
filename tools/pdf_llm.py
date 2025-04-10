@@ -16,7 +16,8 @@ load_dotenv()
 llm = ChatOpenAI(
     base_url=os.getenv("OPENAI_BASE_URL"),
     api_key=os.getenv("OPENAI_API_KEY"),
-    model="gpt-4"
+    model="gpt-4o",
+    max_completion_tokens=4096,
 )
 
 # 定义分析提示模板
