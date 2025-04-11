@@ -36,10 +36,22 @@ PDF内容：
 请以结构化的方式回答上述问题，并用中文回答。
 """
 
+USER_DEFINED_PROMPT = """
+请根据以下提示分析PDF文档内容：
+
+{user_defined_prompt}
+
+PDF内容：
+{content}
+
+请以结构化的方式回答，并用中文回答。
+"""
+
 async def analyze_pdf(
     pdf_url: str,
     max_pages: Optional[int] = 10,
-    analysis_type: str = "summary"
+    analysis_type: str = "summary",
+    user_defined_prompt: Optional[str] = None
 ) -> List[types.TextContent]:
     """
     下载并分析PDF文档
@@ -47,7 +59,8 @@ async def analyze_pdf(
     Args:
         pdf_url: PDF文件的URL
         max_pages: 最大分析页数，默认为10页
-        analysis_type: 分析类型，可以是"summary"或"detailed"
+        analysis_type: 分析类型，可以是"summary"或"detailed"或"user_defined"
+        user_defined_prompt: 用户自定义分析提示，当analysis_type为user_defined时必填
     
     Returns:
         分析结果列表
@@ -98,23 +111,34 @@ async def analyze_pdf(
                 template=PDF_ANALYSIS_PROMPT,
                 input_variables=["content"]
             )
-        else:
-            # 简化的摘要提示
+            chain = LLMChain(llm=llm, prompt=prompt)
+            result = await chain.arun(content=content)
+        elif analysis_type == "user_defined":
+            if not user_defined_prompt:
+                return [types.TextContent(
+                    type="text",
+                    text="错误: 用户自定义分析类型需要提供user_defined_prompt参数"
+                )]
+            prompt = PromptTemplate(
+                template=USER_DEFINED_PROMPT,
+                input_variables=["user_defined_prompt", "content"]
+            )
+            chain = LLMChain(llm=llm, prompt=prompt)
+            result = await chain.arun(user_defined_prompt=user_defined_prompt, content=content)
+        else:  # summary
             prompt = PromptTemplate(
                 template="请为以下PDF内容生成一个简洁的摘要，并用中文回答：\n\n{content}",
                 input_variables=["content"]
             )
-        
-        # 创建LLM链
-        chain = LLMChain(llm=llm, prompt=prompt)
-        
-        # 执行分析
-        result = await chain.arun(content=content)
+            chain = LLMChain(llm=llm, prompt=prompt)
+            result = await chain.arun(content=content)
         
         # 构建输出
         output = f"## PDF分析结果\n\n"
         output += f"**PDF URL**: {pdf_url}\n\n"
         output += f"**分析类型**: {analysis_type}\n\n"
+        if analysis_type == "user_defined":
+            output += f"**用户提示**: {user_defined_prompt}\n\n"
         output += f"**分析页数**: {pages_to_analyze}\n\n"
         output += "---\n\n"
         output += result
@@ -125,6 +149,11 @@ async def analyze_pdf(
         return [types.TextContent(
             type="text",
             text=f"下载PDF时发生错误: {str(e)}"
+        )]
+    except pdfplumber.PDFSyntaxError:
+        return [types.TextContent(
+            type="text",
+            text="错误: 无效的PDF文件格式"
         )]
     except Exception as e:
         return [types.TextContent(
@@ -145,8 +174,9 @@ async def pdf_llm_tool(
     pdf_url = arguments["pdf_url"]
     max_pages = arguments.get("max_pages", 10)
     analysis_type = arguments.get("analysis_type", "summary")
+    user_defined_prompt = arguments.get("user_defined_prompt")
     
-    return await analyze_pdf(pdf_url, max_pages, analysis_type)
+    return await analyze_pdf(pdf_url, max_pages, analysis_type, user_defined_prompt)
 
 
 def get_tools() -> List[types.Tool]:
@@ -169,9 +199,14 @@ def get_tools() -> List[types.Tool]:
                     },
                     "analysis_type": {
                         "type": "string",
-                        "description": "分析类型：summary(摘要)或detailed(详细分析)",
-                        "enum": ["summary", "detailed"],
+                        "description": "分析类型：summary(摘要)或detailed(详细分析)或user_defined(用户自定义分析)",
+                        "enum": ["summary", "detailed", "user_defined"],
                         "default": "summary"
+                    },
+                    "user_defined_prompt": {
+                        "type": "string",
+                        "description": "用户自定义分析提示，当analysis_type为user_defined时必填",
+                        "default": None
                     }
                 },
             },
