@@ -25,7 +25,8 @@ def _import_all_prompt_modules():
 
 def register_all_prompts():
     """获取所有注册的prompts"""
-    prompts_list = []
+    # 创建一个字典来存储所有prompts，key为prompt的name
+    prompts_dict = {}
     
     # 确保所有prompt模块都已导入
     _import_all_prompt_modules()
@@ -37,8 +38,13 @@ def register_all_prompts():
             
             # 查找模块中的get_prompts函数
             if hasattr(module, 'get_prompts'):
-                prompts_list.extend(module.get_prompts())
+                prompts = module.get_prompts()
+                # 将每个prompt添加到字典中，使用name作为key
+                for prompt in prompts:
+                    prompts_dict[prompt.name] = prompt
     
+    # 将字典中的prompt列表化并返回，MCP需要列表形式
+    prompts_list = list(prompts_dict.values())
     return prompts_list
 
 def get_prompt_by_name(name: str) -> Optional[types.Prompt]:

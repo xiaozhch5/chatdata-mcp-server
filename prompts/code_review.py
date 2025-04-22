@@ -13,7 +13,6 @@ def get_prompts() -> list[Prompt]:
         Prompt(
             name="review_code",
             description="审查代码并提供反馈",
-            func=review_code,
             arguments=[
                 types.PromptArgument(
                     name="code",

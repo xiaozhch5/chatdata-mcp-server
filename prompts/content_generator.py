@@ -22,7 +22,6 @@ def get_prompts() -> list[Prompt]:
         Prompt(
             name="generate_content",
             description="生成指定内容，可以选择语气和长度",
-            func=generate_content,
             arguments=[
                 types.PromptArgument(
                     name="prompt",

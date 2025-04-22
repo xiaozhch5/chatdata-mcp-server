@@ -33,7 +33,11 @@ def main(port: int, transport: str) -> int:
     # 注册所有prompts
     @app.list_prompts()
     async def list_prompts() -> list[types.Prompt]:
-        return register_all_prompts()
+        prompts = register_all_prompts()
+        # 为每个prompt添加key属性（如果mcp.types.Prompt允许额外字段）
+        for prompt in prompts:
+            setattr(prompt, "key", prompt.name)
+        return prompts
     
     # 处理获取prompt
     @app.get_prompt()
@@ -48,26 +52,26 @@ def main(port: int, transport: str) -> int:
     if transport == "sse":
         from mcp.server.sse import SseServerTransport
         from starlette.applications import Starlette
-        from starlette.routing import Route
+        from starlette.routing import Route, Mount
 
-        sse = SseServerTransport("/messages")
+        sse = SseServerTransport("/messages/")
 
         async def handle_sse(request):
             async with sse.connect_sse(
                 request.scope, request.receive, request._send
             ) as streams:
-                await app.run(
+                return await app.run(
                     streams[0], streams[1], app.create_initialization_options()
                 )
 
         async def handle_messages(request):
-            await sse.handle_post_message(request.scope, request.receive, request._send)
+            return await sse.handle_post_message(request.scope, request.receive, request._send)
 
         starlette_app = Starlette(
             debug=True,
             routes=[
                 Route("/sse", endpoint=handle_sse),
-                Route("/messages", endpoint=handle_messages, methods=["POST"]),
+                Mount("/messages/", app=sse.handle_post_message),
             ],
         )
 

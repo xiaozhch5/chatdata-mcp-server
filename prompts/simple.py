@@ -20,7 +20,6 @@ def get_prompts() -> list[Prompt]:
         Prompt(
             name="simple",
             description="一个带有可选上下文和主题参数的简单prompt",
-            func=simple,
             arguments=[
                 types.PromptArgument(
                     name="context",
