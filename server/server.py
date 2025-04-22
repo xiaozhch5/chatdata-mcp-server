@@ -2,11 +2,14 @@ import anyio
 import click
 import mcp.types as types
 from mcp.server import Server
+from pydantic import FileUrl
 
 # 导入工具模块
 from tools import call_tool, register_all_tools
 # 导入prompt模块
 from prompts import register_all_prompts, execute_prompt
+# 导入resource模块
+from resources import register_all_resources, get_resource_by_uri
 
 
 @click.command()
@@ -48,6 +51,20 @@ def main(port: int, transport: str) -> int:
             return await execute_prompt(name, arguments)
         except ValueError as e:
             raise ValueError(f"处理prompt请求失败: {str(e)}")
+    
+    # 注册资源相关的处理函数
+    @app.list_resources()
+    async def list_resources() -> list[types.Resource]:
+        """列出所有可用的资源"""
+        return register_all_resources()
+    
+    @app.read_resource()
+    async def read_resource(uri: FileUrl) -> str | bytes:
+        """读取指定URI的资源内容"""
+        try:
+            return get_resource_by_uri(uri)
+        except ValueError as e:
+            raise ValueError(f"读取资源失败: {str(e)}")
 
     if transport == "sse":
         from mcp.server.sse import SseServerTransport
@@ -63,9 +80,6 @@ def main(port: int, transport: str) -> int:
                 return await app.run(
                     streams[0], streams[1], app.create_initialization_options()
                 )
-
-        async def handle_messages(request):
-            return await sse.handle_post_message(request.scope, request.receive, request._send)
 
         starlette_app = Starlette(
             debug=True,

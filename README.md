@@ -8,8 +8,9 @@ ChatData MCP 服务器是一个基于 Model Control Protocol (MCP) 的服务应�
 
 - 执行各种工具函数，扩展模型的能力
 - 提供预设的提示模板，简化常见任务
+- 提供可直接访问的资源数据，包括文本、二进制和动态生成的内容
 - 支持通过标准输入/输出或SSE方式进行通信
-- 自动发现和注册新添加的工具和提示
+- 自动发现和注册新添加的工具、提示和资源
 
 ## 核心组件
 
@@ -49,6 +50,19 @@ ChatData MCP 服务器是一个基于 Model Control Protocol (MCP) 的服务应�
 - `content_generator.py` - 内容生成提示
 - `code_review.py` - 代码审查提示
 - `utils.py` - 提示工具函数
+
+### 资源系统 (`resources/`)
+
+资源模块提供了可直接通过MCP协议访问的数据对象：
+
+- **文本资源**：
+  - `text_resources.py` - 提供常见的文本资源（问候语、帮助信息等）
+  
+- **二进制资源**：
+  - `binary_resources.py` - 提供二进制数据资源（图像、JSON数据等）
+  
+- **动态资源**：
+  - `dynamic_resources.py` - 提供动态生成的资源（系统信息、当前时间、内存使用情况等）
 
 ### 服务器组件 (`server/`)
 
@@ -182,6 +196,47 @@ def get_prompts():
             }
         )
     ]
+```
+
+### 添加新资源
+
+1. 在 `resources/` 目录中创建新的 Python 文件
+2. 实现资源获取函数和资源内容读取函数
+3. 提供 `get_resources()` 和 `read_resource()` 函数
+
+示例：
+
+```python
+import mcp.types as types
+from pydantic import FileUrl
+
+# 资源内容定义
+RESOURCES = {
+    "my_resource": "这是我的自定义资源内容"
+}
+
+def get_resources() -> list[types.Resource]:
+    """返回资源定义列表"""
+    return [
+        types.Resource(
+            uri=FileUrl(f"file:///{name}.txt"),
+            name=name,
+            description=f"自定义资源 {name}",
+            mimeType="text/plain",
+        )
+        for name in RESOURCES.keys()
+    ]
+
+def read_resource(name: str) -> str | bytes:
+    """读取指定名称的资源内容"""
+    if name in RESOURCES:
+        return RESOURCES[name]
+    # 处理带扩展名的请求
+    if name.endswith('.txt'):
+        base_name = name[:-4]
+        if base_name in RESOURCES:
+            return RESOURCES[base_name]
+    return None
 ```
 
 ## 许可证
